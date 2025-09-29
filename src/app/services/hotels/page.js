@@ -6,6 +6,7 @@ import { useState } from "react";
 
 export default function HotelsPage() {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const hotelData = {
     title: 'Boutique Hotels',
@@ -54,22 +55,61 @@ export default function HotelsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <nav className="fixed top-0 w-full z-50 bg-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-500 bg-clip-text text-transparent">
+            <Link href="/" className="text-xl sm:text-2xl font-bold text-gray-800">
               GX Company Limited
             </Link>
-            <div className="flex items-center space-x-6">
-              <Link href="/" className="text-gray-700 hover:text-amber-600 transition-colors">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-6">
+              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Home
               </Link>
-              <Link href="/#services" className="text-gray-700 hover:text-amber-600 transition-colors">
+              <Link href="/#services" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Services
               </Link>
-              <Link href="/#contact" className="text-gray-700 hover:text-amber-600 transition-colors">
+              <Link href="/#contact" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Contact
+              </Link>
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <button
+              className="md:hidden flex flex-col space-y-1 p-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              <span className={`block w-6 h-0.5 bg-gray-800 transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
+              <span className={`block w-6 h-0.5 bg-gray-800 transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
+              <span className={`block w-6 h-0.5 bg-gray-800 transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+            </button>
+          </div>
+
+          {/* Mobile Navigation Menu */}
+          <div className={`md:hidden transition-all duration-300 overflow-hidden ${isMobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="pt-4 pb-2 space-y-2">
+              <Link
+                href="/"
+                className="block w-full text-left px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-300 font-medium rounded-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                href="/#services"
+                className="block w-full text-left px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-300 font-medium rounded-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Services
+              </Link>
+              <Link
+                href="/#contact"
+                className="block w-full text-left px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-300 font-medium rounded-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Contact
               </Link>
             </div>
@@ -78,7 +118,7 @@ export default function HotelsPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative h-96 mt-20 overflow-hidden rounded-b-3xl">
+      <section className="relative h-64 sm:h-80 md:h-96 mt-20 overflow-hidden rounded-b-3xl">
         <Image
           src={hotelData.hero}
           alt={hotelData.title}
@@ -87,11 +127,11 @@ export default function HotelsPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20"></div>
         <div className="relative z-10 h-full flex items-center">
-          <div className="max-w-7xl mx-auto px-6">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 md:mb-4">
               {hotelData.title}
             </h1>
-            <p className="text-2xl text-amber-300 font-medium">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-200 font-medium">
               {hotelData.subtitle}
             </p>
           </div>
@@ -99,7 +139,7 @@ export default function HotelsPage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-16">
         {/* Description Section */}
         <div className="grid lg:grid-cols-2 gap-12 mb-16">
           <div>
