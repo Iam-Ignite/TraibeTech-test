@@ -1,9 +1,10 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createRequestHandler } from "@remix-run/node";
 import { installGlobals } from "@remix-run/node";
 
 installGlobals();
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Dynamically import the server build
   const build = await import("../build/server/index.js");
 

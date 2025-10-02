@@ -3,7 +3,7 @@
   "installCommand": "npm install",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
   "functions": {
-    "api/index.js": {
+    "api/index.ts": {
       "includeFiles": "node_modules/.prisma/**"
     }
   }
