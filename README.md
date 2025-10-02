@@ -78,7 +78,12 @@ Then edit `.env` and add your Supabase credentials:
 DATABASE_URL="postgresql://postgres:your-password@db.your-project.supabase.co:5432/postgres"
 SUPABASE_URL="https://your-project.supabase.co"
 SUPABASE_ANON_KEY="your-anon-key-here"
+SITE_URL="http://localhost:5175"  # Use your production URL in production
 \`\`\`
+
+**Important:** The `SITE_URL` variable is used for email confirmation redirects. Set it to:
+- Local development: `http://localhost:5175` (or whatever port you're using)
+- Production: Your actual production URL (e.g., `https://yourapp.com`)
 
 ### Run migrations
 
@@ -297,8 +302,19 @@ The authentication system uses Supabase Auth with the following flow:
 **Important Notes:**
 - By default, Supabase requires email confirmation before users can sign in
 - Users will receive a confirmation email upon signup - they must click the link to activate their account
+- Email confirmation links use the `SITE_URL` environment variable to redirect users back to your app
 - If email confirmation is disabled in Supabase settings, users can sign in immediately after signup
 - Confirmation emails are sent from Supabase - ensure your Supabase project's email settings are configured
+
+**Supabase Redirect URL Configuration:**
+You need to add your redirect URLs to Supabase dashboard for email confirmation to work:
+1. Go to Supabase Dashboard → Authentication → URL Configuration
+2. Add these to "Redirect URLs":
+   - `http://localhost:5175/**` (for local development)
+   - `https://your-production-domain.com/**` (for production)
+3. Save the configuration
+
+This ensures Supabase accepts the redirect after email confirmation.
 
 ## Notes
 

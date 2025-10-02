@@ -2,6 +2,7 @@ import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from
 import { useActionData, Form, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import { getUser } from "~/lib/auth.server";
+import { getURL } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -47,6 +48,9 @@ export async function action({ request }: ActionFunctionArgs) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: `${getURL()}/auth/confirm`,
+    },
   });
 
   if (error) {

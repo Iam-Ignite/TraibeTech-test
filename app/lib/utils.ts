@@ -28,3 +28,28 @@ export function getRelativeTime(date: Date | string): string {
   if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} month${Math.floor(diffInSeconds / 2592000) > 1 ? "s" : ""} ago`;
   return `${Math.floor(diffInSeconds / 31536000)} year${Math.floor(diffInSeconds / 31536000) > 1 ? "s" : ""} ago`;
 }
+
+/**
+ * Get the site URL for email redirects
+ * Automatically determines the correct URL based on environment
+ */
+export function getURL(): string {
+  // Check if we're in a browser environment
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  // Check for explicit SITE_URL env var (best for production)
+  let url = process.env.SITE_URL?.trim();
+
+  if (url) {
+    // Ensure URL has protocol
+    url = url.startsWith("http") ? url : `https://${url}`;
+    // Remove trailing slash for consistency
+    url = url.endsWith("/") ? url.slice(0, -1) : url;
+    return url;
+  }
+
+  // Fallback to localhost for development
+  return "http://localhost:5175";
+}

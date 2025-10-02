@@ -1,5 +1,5 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, Form, Link } from "@remix-run/react";
+import { useActionData, useLoaderData, useSearchParams, Form, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import { getUser } from "~/lib/auth.server";
 
@@ -8,7 +8,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (user) {
     return redirect("/");
   }
-  return json({});
+
+  const url = new URL(request.url);
+  const confirmed = url.searchParams.get("confirmed");
+  const error = url.searchParams.get("error");
+
+  return json({
+    confirmed: confirmed === "true",
+    confirmationError: error === "confirmation_failed"
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -41,6 +49,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function Login() {
   const actionData = useActionData<typeof action>();
+  const loaderData = useLoaderData<typeof loader>();
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -54,6 +63,31 @@ export default function Login() {
           </div>
 
           <Form method="post" className="space-y-6">
+            {loaderData.confirmed && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-800">
+                      Email confirmed successfully! You can now sign in with your credentials.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {loaderData.confirmationError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  Email confirmation failed. The link may have expired. Please try signing up again.
+                </p>
+              </div>
+            )}
+
             {actionData?.error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{actionData.error}</p>
