@@ -1,20 +1,18 @@
-import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useNavigation, Form, Link } from "@remix-run/react";
+import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { Form, useActionData, useNavigation, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import { getUser } from "~/lib/auth.server";
-import { getURL } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await getUser(request);
+  const { user } = await getUser(request);
+
+  // If already logged in, redirect to home
   if (user) {
     return redirect("/");
   }
+
   return json({});
 }
-
-type ActionResponse =
-  | { error: string }
-  | { success: string };
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -23,44 +21,42 @@ export async function action({ request }: ActionFunctionArgs) {
   const confirmPassword = formData.get("confirmPassword")?.toString();
 
   if (!email || !password || !confirmPassword) {
-    return json<ActionResponse>(
-      { error: "All fields are required" },
-      { status: 400 }
-    );
+    return json({ error: "All fields are required" }, { status: 400 });
   }
 
   if (password !== confirmPassword) {
-    return json<ActionResponse>(
-      { error: "Passwords do not match" },
-      { status: 400 }
-    );
+    return json({ error: "Passwords do not match" }, { status: 400 });
   }
 
   if (password.length < 6) {
-    return json<ActionResponse>(
-      { error: "Password must be at least 6 characters" },
-      { status: 400 }
-    );
+    return json({ error: "Password must be at least 6 characters" }, { status: 400 });
   }
 
   const { supabase, headers } = createSupabaseServerClient(request);
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${getURL()}/auth/confirm`,
+      emailRedirectTo: `${new URL(request.url).origin}/`,
     },
   });
 
   if (error) {
-    return json<ActionResponse>({ error: error.message }, { status: 400 });
+    return json({ error: error.message }, { status: 400 });
   }
 
-  return json<ActionResponse>(
-    { success: "Account created! Please check your email to confirm your account before signing in." },
-    { headers }
-  );
+  // If email confirmation is disabled, user will be logged in immediately
+  // If enabled, they need to check their email
+  if (data.session) {
+    // User is logged in
+    return redirect("/", { headers });
+  } else {
+    // Email confirmation required
+    return json({
+      error: "Please check your email to confirm your account before signing in."
+    }, { status: 200 });
+  }
 }
 
 export default function Signup() {
@@ -70,123 +66,88 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Sign Up</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Create your CMS account
-            </p>
-          </div>
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Or{" "}
+            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              sign in to existing account
+            </Link>
+          </p>
+        </div>
 
+        <div className="bg-white py-8 px-4 shadow-sm rounded-lg sm:px-10">
           <Form method="post" className="space-y-6">
-            {actionData && "error" in actionData && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">{actionData.error}</p>
-              </div>
-            )}
-
-            {actionData && "success" in actionData && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-green-800">Account created successfully!</h3>
-                    <div className="mt-2 text-sm text-green-700">
-                      <p className="mb-2">Please check your email to confirm your account before signing in.</p>
-                      <p className="text-xs">
-                        <strong>Note:</strong> If you don't see the email, check your spam folder.
-                        Once confirmed, you can <Link to="/login" className="underline font-medium hover:text-green-900">sign in here</Link>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {actionData?.error && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-800">{actionData.error}</div>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                required
-                autoComplete="email"
-                className="input-field"
-                placeholder="you@example.com"
-              />
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="input-field"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                autoComplete="new-password"
-                className="input-field"
-                placeholder="••••••••"
-              />
-              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="input-field"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm Password
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                required
-                autoComplete="new-password"
-                className="input-field"
-                placeholder="••••••••"
-              />
+              <div className="mt-1">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="input-field"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Creating account..." : "Sign up"}
+              </button>
+            </div>
           </Form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
-                Sign in
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
-              ← Back to home
-            </Link>
-          </div>
         </div>
       </div>
     </div>

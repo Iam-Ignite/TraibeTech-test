@@ -1,22 +1,17 @@
-import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, Form, Link } from "@remix-run/react";
+import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { Form, useActionData, useNavigation, Link } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/lib/supabase.server";
 import { getUser } from "~/lib/auth.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await getUser(request);
+  const { user } = await getUser(request);
+
+  // If already logged in, redirect to home
   if (user) {
     return redirect("/");
   }
 
-  const url = new URL(request.url);
-  const confirmed = url.searchParams.get("confirmed");
-  const error = url.searchParams.get("error");
-
-  return json({
-    confirmed: confirmed === "true",
-    confirmationError: error === "confirmation_failed"
-  });
+  return json({});
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -36,12 +31,7 @@ export async function action({ request }: ActionFunctionArgs) {
   });
 
   if (error) {
-    // Provide a more helpful message for email not confirmed error
-    let errorMessage = error.message;
-    if (error.message.toLowerCase().includes("email not confirmed")) {
-      errorMessage = "Please confirm your email address before signing in. Check your inbox for the confirmation link.";
-    }
-    return json({ error: errorMessage }, { status: 400 });
+    return json({ error: error.message }, { status: 400 });
   }
 
   return redirect("/", { headers });
@@ -49,116 +39,76 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function Login() {
   const actionData = useActionData<typeof action>();
-  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Sign In</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Access your CMS account
-            </p>
-          </div>
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Or{" "}
+            <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+              create a new account
+            </Link>
+          </p>
+        </div>
 
+        <div className="bg-white py-8 px-4 shadow-sm rounded-lg sm:px-10">
           <Form method="post" className="space-y-6">
-            {loaderData.confirmed && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-800">
-                      Email confirmed successfully! You can now sign in with your credentials.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {loaderData.confirmationError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">
-                  Email confirmation failed. The link may have expired. Please try signing up again.
-                </p>
-              </div>
-            )}
-
             {actionData?.error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">{actionData.error}</p>
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-800">{actionData.error}</div>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                required
-                autoComplete="email"
-                className="input-field"
-                placeholder="you@example.com"
-              />
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="input-field"
+                  placeholder="you@example.com"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                autoComplete="current-password"
-                className="input-field"
-                placeholder="••••••••"
-              />
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="input-field"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </button>
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </button>
+            </div>
           </Form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-blue-600 hover:text-blue-800 font-medium">
-                Sign up
-              </Link>
-            </p>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
-              ← Back to home
-            </Link>
-          </div>
         </div>
       </div>
     </div>

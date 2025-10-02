@@ -8,20 +8,12 @@ import {
   Link,
   Form,
 } from "@remix-run/react";
-import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { getUser } from "./lib/auth.server";
 import "./styles/tailwind.css";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "CMS - Content Management System" },
-    { name: "description", content: "A simple CMS built with Remix and Supabase" },
-  ];
-};
-
 export const links: LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -36,15 +28,14 @@ export const links: LinksFunction = () => [
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    const user = await getUser(request);
+    const { user, headers } = await getUser(request);
     const env = {
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     };
-    return json({ user, env });
+    return json({ user, env }, { headers });
   } catch (error) {
     console.error("Error in root loader:", error);
-    // Return minimal data to prevent complete app crash
     const env = {
       SUPABASE_URL: process.env.SUPABASE_URL,
       SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
@@ -72,15 +63,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { user, env } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const user = data?.user;
+  const env = data?.env;
 
   return (
     <>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `window.ENV = ${JSON.stringify(env)}`,
-        }}
-      />
+      {env && (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(env)}`,
+          }}
+        />
+      )}
       {user && (
         <nav className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

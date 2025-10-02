@@ -1,4 +1,4 @@
-import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation, Link } from "@remix-run/react";
 import { prisma } from "~/lib/db.server";
 import { generateSlug } from "~/lib/utils";
@@ -6,12 +6,12 @@ import { requireAuth } from "~/lib/auth.server";
 import { useState } from "react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { headers } = await requireAuth(request);
-  return json({}, { headers });
+  await requireAuth(request);
+  return json({});
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { user } = await requireAuth(request);
+  await requireAuth(request);
 
   const formData = await request.formData();
   const title = formData.get("title")?.toString();
@@ -42,7 +42,6 @@ export async function action({ request }: ActionFunctionArgs) {
       slug,
       category,
       content,
-      authorId: user.id,
     },
   });
 

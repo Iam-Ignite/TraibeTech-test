@@ -2,8 +2,11 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link, Form, useSearchParams } from "@remix-run/react";
 import { prisma } from "~/lib/db.server";
 import { formatDate, getRelativeTime } from "~/lib/utils";
+import { requireAuth } from "~/lib/auth.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  await requireAuth(request);
+
   try {
     const url = new URL(request.url);
 
@@ -42,7 +45,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json({ articles, categories: categories.map((c) => c.category) });
   } catch (error) {
     console.error("Error loading articles:", error);
-    // Return empty data to prevent app crash
     return json({ articles: [], categories: [] });
   }
 }

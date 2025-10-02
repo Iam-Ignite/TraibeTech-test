@@ -12,7 +12,6 @@ type Article = {
   category: string;
   content: string;
   parentId: string | null;
-  authorId: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -33,8 +32,7 @@ type ActionResponse =
 
 // Loader
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Require authentication
-  const { headers } = await requireAuth(request);
+  await requireAuth(request);
 
   const url = new URL(request.url);
   const articleId = url.searchParams.get("article");
@@ -67,13 +65,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ? await prisma.article.findUnique({ where: { id: articleId } })
     : null;
 
-  return json({ tree, currentArticle }, { headers });
+  return json({ tree, currentArticle });
 }
 
 // Action
 export async function action({ request }: ActionFunctionArgs) {
-  // Require authentication
-  const { user } = await requireAuth(request);
+  await requireAuth(request);
 
   const formData = await request.formData();
   const id = formData.get("id")?.toString();
@@ -106,7 +103,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const article = await prisma.article.update({
       where: { id },
-      data: { title, slug, category, content, parentId, authorId: user.id },
+      data: { title, slug, category, content, parentId },
     });
 
     return json<ActionResponse>({ success: true, article });
@@ -122,7 +119,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const article = await prisma.article.create({
-      data: { title, slug, category, content, parentId, authorId: user.id },
+      data: { title, slug, category, content, parentId },
     });
 
     return redirect(`/editor?article=${article.id}`);
