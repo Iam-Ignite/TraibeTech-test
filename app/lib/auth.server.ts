@@ -3,47 +3,80 @@ import { createSupabaseServerClient } from "./supabase.server";
 import { prisma } from "./db.server";
 
 export async function requireAuth(request: Request) {
-  const { supabase } = createSupabaseServerClient(request);
+  try {
+    const { supabase } = createSupabaseServerClient(request);
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-  if (!session) {
+    if (sessionError) {
+      console.error("Session error:", sessionError);
+      throw redirect("/login");
+    }
+
+    if (!session) {
+      throw redirect("/login");
+    }
+
+    // Get or create user in our database
+    let user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+    });
+
+    if (!user) {
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: session.user.id,
+            email: session.user.email!,
+          },
+        });
+      } catch (dbError) {
+        console.error("Error creating user in database:", dbError);
+        // If user creation fails, try to find the user again (might be a race condition)
+        user = await prisma.user.findUnique({
+          where: { email: session.user.email! },
+        });
+
+        if (!user) {
+          throw new Error("Failed to create or find user in database");
+        }
+      }
+    }
+
+    return { user, session };
+  } catch (error) {
+    // If it's a redirect, throw it
+    if (error instanceof Response) {
+      throw error;
+    }
+    // Otherwise log and redirect to login
+    console.error("Auth error:", error);
     throw redirect("/login");
   }
-
-  // Get or create user in our database
-  let user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
-  });
-
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        id: session.user.id,
-        email: session.user.email!,
-      },
-    });
-  }
-
-  return { user, session };
 }
 
 export async function getUser(request: Request) {
-  const { supabase } = createSupabaseServerClient(request);
+  try {
+    const { supabase } = createSupabaseServerClient(request);
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  if (!session) {
+    if (!session) {
+      return null;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Error getting user:", error);
     return null;
   }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email! },
-  });
-
-  return user;
 }

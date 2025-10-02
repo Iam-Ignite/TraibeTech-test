@@ -51,5 +51,5 @@ export function getURL(): string {
   }
 
   // Fallback to localhost for development
-  return "http://localhost:5175";
+  return "https://traibe-tech-test-3jzv.vercel.app/";
 }

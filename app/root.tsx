@@ -8,12 +8,20 @@ import {
   Link,
   Form,
 } from "@remix-run/react";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { getUser } from "./lib/auth.server";
 import "./styles/tailwind.css";
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "CMS - Content Management System" },
+    { name: "description", content: "A simple CMS built with Remix and Supabase" },
+  ];
+};
+
 export const links: LinksFunction = () => [
+  { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
