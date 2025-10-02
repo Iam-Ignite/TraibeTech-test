@@ -1,12 +1,10 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { prisma } from "~/lib/db.server";
-import { requireAuth } from "~/lib/auth.server";
 import { ArticlesTable } from "~/components/articles/ArticlesTable";
 import { ArticlesFilter } from "~/components/articles/ArticlesFilter";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await requireAuth(request);
 
   try {
     const url = new URL(request.url);
