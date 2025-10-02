@@ -4,14 +4,20 @@ import { createSupabaseServerClient } from "~/lib/supabase.server";
 import { getUser } from "~/lib/auth.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { user } = await getUser(request);
+  try {
+    const { user } = await getUser(request);
 
-  // If already logged in, redirect to home
-  if (user) {
-    return redirect("/");
+    // If already logged in, redirect to home
+    if (user) {
+      return redirect("/");
+    }
+
+    return json({});
+  } catch (error) {
+    console.error("Login loader error:", error);
+    // Allow access to login page even if there's an error
+    return json({});
   }
-
-  return json({});
 }
 
 export async function action({ request }: ActionFunctionArgs) {

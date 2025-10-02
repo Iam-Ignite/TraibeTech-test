@@ -27,19 +27,17 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const env = {
+    SUPABASE_URL: process.env.SUPABASE_URL || "",
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || "",
+  };
+
   try {
     const { user, headers } = await getUser(request);
-    const env = {
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
-    };
     return json({ user, env }, { headers });
   } catch (error) {
     console.error("Error in root loader:", error);
-    const env = {
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
-    };
+    // Return null user and env vars so the app can still load
     return json({ user: null, env });
   }
 }
