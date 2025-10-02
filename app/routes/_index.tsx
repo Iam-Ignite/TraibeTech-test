@@ -4,41 +4,47 @@ import { prisma } from "~/lib/db.server";
 import { formatDate, getRelativeTime } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const url = new URL(request.url);
-  
-  const search = url.searchParams.get("search") || "";
-  const filter = url.searchParams.get("filter") || "all";
+  try {
+    const url = new URL(request.url);
 
-  const articles = await prisma.article.findMany({
-    where: {
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: "insensitive" } },
-          { category: { contains: search, mode: "insensitive" } },
-        ],
-      }),
-      ...(filter !== "all" && { category: filter }),
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-    include: {
-      children: {
-        select: {
-          id: true,
+    const search = url.searchParams.get("search") || "";
+    const filter = url.searchParams.get("filter") || "all";
+
+    const articles = await prisma.article.findMany({
+      where: {
+        ...(search && {
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            { category: { contains: search, mode: "insensitive" } },
+          ],
+        }),
+        ...(filter !== "all" && { category: filter }),
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+      include: {
+        children: {
+          select: {
+            id: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  const categories = await prisma.article.findMany({
-    distinct: ["category"],
-    select: {
-      category: true,
-    },
-  });
+    const categories = await prisma.article.findMany({
+      distinct: ["category"],
+      select: {
+        category: true,
+      },
+    });
 
-  return json({ articles, categories: categories.map((c) => c.category) });
+    return json({ articles, categories: categories.map((c) => c.category) });
+  } catch (error) {
+    console.error("Error loading articles:", error);
+    // Return empty data to prevent app crash
+    return json({ articles: [], categories: [] });
+  }
 }
 
 export default function Index() {

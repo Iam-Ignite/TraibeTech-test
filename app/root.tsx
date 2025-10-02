@@ -27,12 +27,22 @@ export const links: LinksFunction = () => [
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await getUser(request);
-  const env = {
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
-  };
-  return json({ user, env });
+  try {
+    const user = await getUser(request);
+    const env = {
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    };
+    return json({ user, env });
+  } catch (error) {
+    console.error("Error in root loader:", error);
+    // Return minimal data to prevent complete app crash
+    const env = {
+      SUPABASE_URL: process.env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    };
+    return json({ user: null, env });
+  }
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
