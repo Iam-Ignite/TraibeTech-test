@@ -1,5 +1,10 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "node_modules/.prisma/**"
+    }
+  }
 }
