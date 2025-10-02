@@ -2,7 +2,6 @@ import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type 
 import { useLoaderData, useActionData, useNavigation, Link, Form } from "@remix-run/react";
 import { prisma } from "~/lib/db.server";
 import { generateSlug } from "~/lib/utils";
-import { requireAuth } from "~/lib/auth.server";
 import { useState, useEffect } from "react";
 // Define Article type if not exported from @prisma/client
 type Article = {
@@ -32,8 +31,6 @@ type ActionResponse =
 
 // Loader
 export async function loader({ request }: LoaderFunctionArgs) {
-  await requireAuth(request);
-
   const url = new URL(request.url);
   const articleId = url.searchParams.get("article");
 
@@ -70,8 +67,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 // Action
 export async function action({ request }: ActionFunctionArgs) {
-  await requireAuth(request);
-
   const formData = await request.formData();
   const id = formData.get("id")?.toString();
   const title = formData.get("title")?.toString();
