@@ -168,7 +168,24 @@ Hit delete from the table view. It'll ask for confirmation. If you delete a pare
 
 ## Deployment
 
-I've set this up to deploy easily on Vercel:
+### Production Environment Variables
+
+When deploying to production (Vercel, Fly.io, etc.), make sure to set ALL environment variables:
+
+\`\`\`env
+DATABASE_URL="your-production-database-url"
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_ANON_KEY="your-anon-key"
+SITE_URL="https://your-production-domain.com"
+NODE_ENV="production"
+\`\`\`
+
+**Optional debugging:**
+\`\`\`env
+DEBUG_AUTH="true"  # Enable auth cookie logging (view in Vercel logs)
+\`\`\`
+
+### Deploying to Vercel
 
 \`\`\`bash
 git add .
@@ -178,11 +195,24 @@ git push origin main
 
 Then:
 1. Go to [vercel.com](https://vercel.com) and import your repo
-2. Add your `DATABASE_URL` as an environment variable
+2. Add ALL environment variables listed above
 3. Update the build command to: `npx prisma generate && npx prisma migrate deploy && npm run build`
 4. Deploy
 
-Vercel should auto-detect that it's a Remix app. Make sure your Supabase database is accessible from Vercel's servers.
+**Important for Authentication:**
+- Vercel will auto-detect Remix
+- Cookies will work in production with `HTTPS` and proper `SITE_URL`
+- Make sure Supabase redirect URLs include your production domain
+
+### Troubleshooting Production Auth Issues
+
+If users can log in but get redirected when accessing protected routes:
+
+1. **Check Vercel logs** for auth errors
+2. **Enable DEBUG_AUTH=true** to see cookie flow
+3. **Verify SITE_URL** matches your production domain exactly
+4. **Check Supabase redirect URLs** include `https://your-domain.com/**`
+5. **Ensure NODE_ENV=production** is set
 
 You could also use Fly.io, Railway, or Render - they all work fine with Remix.
 

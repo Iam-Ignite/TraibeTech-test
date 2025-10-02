@@ -4,21 +4,29 @@ import { prisma } from "./db.server";
 
 export async function requireAuth(request: Request) {
   try {
-    const { supabase } = createSupabaseServerClient(request);
+    const { supabase, headers } = createSupabaseServerClient(request);
 
     const {
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession();
 
+    // Debug logging for local development
+    console.log("[Auth] requireAuth called for:", request.url);
+    console.log("[Auth] Session exists:", !!session);
+    console.log("[Auth] Session error:", sessionError?.message || "none");
+
     if (sessionError) {
-      console.error("Session error:", sessionError);
+      console.error("[Auth] Session error - redirecting to login:", sessionError);
       throw redirect("/login");
     }
 
     if (!session) {
+      console.log("[Auth] No session found - redirecting to login");
       throw redirect("/login");
     }
+
+    console.log("[Auth] Session found for user:", session.user.email);
 
     // Get or create user in our database
     let user = await prisma.user.findUnique({
@@ -46,7 +54,7 @@ export async function requireAuth(request: Request) {
       }
     }
 
-    return { user, session };
+    return { user, session, headers };
   } catch (error) {
     // If it's a redirect, throw it
     if (error instanceof Response) {

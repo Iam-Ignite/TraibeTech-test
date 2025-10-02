@@ -1,5 +1,5 @@
 import { json, redirect, type LoaderFunctionArgs, type ActionFunctionArgs, type SerializeFrom } from "@remix-run/node";
-import { useLoaderData, useActionData, Link, Form } from "@remix-run/react";
+import { useLoaderData, useActionData, useNavigation, Link, Form } from "@remix-run/react";
 import { prisma } from "~/lib/db.server";
 import { generateSlug } from "~/lib/utils";
 import { requireAuth } from "~/lib/auth.server";
@@ -34,7 +34,7 @@ type ActionResponse =
 // Loader
 export async function loader({ request }: LoaderFunctionArgs) {
   // Require authentication
-  await requireAuth(request);
+  const { headers } = await requireAuth(request);
 
   const url = new URL(request.url);
   const articleId = url.searchParams.get("article");
@@ -67,7 +67,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ? await prisma.article.findUnique({ where: { id: articleId } })
     : null;
 
-  return json({ tree, currentArticle });
+  return json({ tree, currentArticle }, { headers });
 }
 
 // Action
@@ -230,6 +230,8 @@ function AlertMessage({
 export default function Editor() {
   const { tree, currentArticle } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
 
   const [formData, setFormData] = useState({
     id: currentArticle?.id || "",
@@ -447,8 +449,22 @@ export default function Editor() {
                       </Link>
                     )}
                   </div>
-                  <button type="submit" className="btn-primary">
-                    {formData.id ? "Save Changes" : "Create Article"}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {formData.id ? "Saving..." : "Creating..."}
+                      </>
+                    ) : (
+                      formData.id ? "Save Changes" : "Create Article"
+                    )}
                   </button>
                 </div>
               </div>
